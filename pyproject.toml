@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sai-detector"
+version = "0.1.0"
+description = "Synthetic AI Image detector with calibration, uncertainty, and cross-generator eval harness"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Sai Likhith Kanuparthi", email = "sailikhith108@gmail.com" }]
+keywords = ["deepfake", "ai-generated", "image-forensics", "calibration", "uncertainty", "national-security"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "numpy>=1.23",
+    "scipy>=1.10",
+    "scikit-learn>=1.2",
+    "scikit-image>=0.20",
+    "PyWavelets>=1.4",
+    "pillow>=9.5",
+    "pydantic>=2.0",
+    "typer>=0.9",
+    "rich>=13.0",
+    "matplotlib>=3.7",
+]
+
+[project.optional-dependencies]
+torch = ["torch>=2.0"]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.1"]
+
+[project.scripts]
+sai = "sai.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["sai*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra -q"
