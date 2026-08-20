@@ -127,8 +127,10 @@ The harness is the production-reliability core. It measures:
 pip install -e .
 ```
 
-Requires Python 3.9+. Optional torch backend for neural signals
-(`pip install -e ".[torch]"`). Dev dependencies: `pip install -e ".[dev]"`.
+Requires Python 3.9+ with numpy, scipy, scikit-learn, scikit-image,
+PyWavelets, Pillow, pydantic, typer, rich, and matplotlib. Optional
+torch backend for neural signals (`pip install -e ".[torch]"`). Dev
+dependencies: `pip install -e ".[dev]"`.
 
 ## CLI
 
