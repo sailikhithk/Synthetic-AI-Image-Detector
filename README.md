@@ -1,4 +1,13 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Synthetic AI Image Detector (SAI) - Multi-signal detection with calibration, uncertainty, and cross-generator eval" width="100%">
+</p>
+
 # Synthetic AI Image Detector (SAI)
+
+> Author: **Sai Likhith Kanuparthi** - Senior AI Infrastructure & Systems Engineer
+> - GitHub: [sailikhithk](https://github.com/sailikhithk)
+> - LinkedIn: [sailikhithk](https://www.linkedin.com/in/sailikhithk)
+> - Portfolio: [sailikhith.me](https://sailikhith.me)
 
 A production-reliability layer for detecting AI-generated images, aimed at
 journalists, fact-checkers, and national-security analysts who cannot afford
@@ -259,3 +268,33 @@ classifier safe to deploy in high-cost decisions:
 ## License
 
 MIT - see [LICENSE](LICENSE).
+
+---
+
+## About the author
+
+**Sai Likhith Kanuparthi** is a Senior AI Infrastructure & Systems Engineer
+at Airbnb, building production GenAI platforms with 30+ foundation model
+integrations. 7+ years shipping production AI systems at Airbnb, Southwest
+Airlines, Shell, Eli Lilly, and Oracle. MS Computer Science from NYU.
+Published at SPE ADIPEC 2022. Open-source contributor to LangChain,
+LiteLLM, Ragas, and LiveKit.
+
+- **GitHub:** [github.com/sailikhithk](https://github.com/sailikhithk)
+- **LinkedIn:** [linkedin.com/in/sailikhithk](https://www.linkedin.com/in/sailikhithk)
+- **Portfolio:** [sailikhith.me](https://sailikhith.me)
+- **Other open-source projects:**
+  - [llm-production-engineering](https://github.com/sailikhithk/llm-production-engineering) - Field notes on LLM serving in production
+  - [mamba-from-scratch](https://github.com/sailikhithk/mamba-from-scratch) - S4, Mamba-1, Mamba-2 in pure PyTorch
+
+---
+
+## Keywords
+
+`Sai Likhith Kanuparthi` `Synthetic AI Image Detector` `SAI` `deepfake detection`
+`AI-generated image detection` `image forensics` `PRNU` `DCT frequency analysis`
+`wavelet denoiser` `temperature calibration` `uncertainty quantification`
+`epistemic uncertainty` `aleatoric uncertainty` `cross-generator generalization`
+`GenImage` `BigGAN` `ADM` `diffusion model detection` `GAN detection`
+`national security` `election integrity` `disinformation detection`
+`calibrated probability` `refusal verdict` `Python` `scikit-image` `NumPy` `SciPy`
