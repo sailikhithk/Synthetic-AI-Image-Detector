@@ -1,0 +1,50 @@
+# Synthetic AI Image Detector (SAI)
+
+> Production-reliability layer for detecting AI-generated images. Built for journalists, fact-checkers, and national-security analysts who cannot afford false accusations but also cannot afford to be fooled by deepfakes.
+
+SAI is an open-source multi-signal detector that reports a calibrated probability, an uncertainty estimate, and a verdict that can refuse to commit when evidence is weak. Most open-source detectors publish a single score and call it a day. SAI adds the production-reliability primitives that real deployments need: temperature calibration, epistemic + aleatoric uncertainty, refusal verdicts, and a cross-generator evaluation harness that measures the new-generator failure mode.
+
+## Evaluated on GenImage benchmark
+
+- BigGAN vs Real: AUROC 0.9403
+- ADM (diffusion) vs Real: AUROC 0.6634
+- All generators (calibrated): AUROC 0.8019, ECE 0.1046
+- Cross-generator: calibration does NOT transfer across generator families
+- Refusal mechanism: 96.15% accuracy at 87% refusal rate
+
+## Signals
+
+1. **Frequency-domain** (DCT cross-channel correlation) - GAN generators leave periodic spectral artifacts
+2. **Reconstruction error** (wavelet denoiser residual) - synthetic images reconstruct cleanly, real photos leave sensor noise residual
+3. **Noise residual** (PRNU-style channel asymmetry) - real cameras leave Bayer-pattern fingerprints, AI generators do not
+
+## Key files
+
+- [README.md](README.md) - full project overview, results table, usage
+- [docs/results.md](docs/results.md) - real-world evaluation writeup with limitations
+- [docs/architecture.md](docs/architecture.md) - design principles and signal pipeline
+- [sai/pipeline.py](sai/pipeline.py) - ensemble detector with calibration and uncertainty
+- [sai/calibration.py](sai/calibration.py) - temperature scaling + epistemic/aleatoric uncertainty
+- [sai/eval.py](sai/eval.py) - evaluation harness with cross-generator generalization experiment
+- [sai/cli.py](sai/cli.py) - CLI: `sai detect`, `sai eval-dir`, `sai calibrate`
+- [scripts/run_real_eval.py](scripts/run_real_eval.py) - reproducible GenImage evaluation
+- [scripts/download_eval_data.py](scripts/download_eval_data.py) - HuggingFace dataset download
+
+## Install
+
+```bash
+pip install -e .
+sai detect path/to/image.png
+sai eval-dir real_dir/ ai_dir/ --generator biggan
+```
+
+## Author
+
+Sai Likhith Kanuparthi - Senior AI Infrastructure & Systems Engineer
+- GitHub: https://github.com/sailikhithk
+- LinkedIn: https://www.linkedin.com/in/sailikhithk
+- Portfolio: https://sailikhith.me
+
+## License
+
+MIT
