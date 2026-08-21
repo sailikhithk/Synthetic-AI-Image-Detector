@@ -1,4 +1,4 @@
-# SAI - Synthetic AI Image Detector
+# Synthetic AI Image Detector (SAI)
 
 A production-reliability layer for detecting AI-generated images, aimed at
 journalists, fact-checkers, and national-security analysts who cannot afford

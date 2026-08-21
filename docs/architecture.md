@@ -1,4 +1,4 @@
-# SAI Architecture
+# Synthetic AI Image Detector (SAI) - Architecture
 
 ## Design principles
 

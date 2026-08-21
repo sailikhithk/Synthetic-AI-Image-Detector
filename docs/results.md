@@ -1,4 +1,4 @@
-# SAI Real-World Evaluation Results
+# Synthetic AI Image Detector (SAI) - Real-World Evaluation Results
 
 ## Setup
 
