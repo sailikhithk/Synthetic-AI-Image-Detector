@@ -1,0 +1,40 @@
+{
+  "n_per_generator": 200,
+  "datasets": {
+    "real": "MS-COCO val2014 (bitmind/MS-COCO on HuggingFace)",
+    "biggan": "GenImage BigGAN (bitmind/GenImage_BigGAN on HuggingFace)",
+    "adm": "GenImage ADM (bitmind/GenImage_ADM on HuggingFace)"
+  },
+  "image_size": "256x256 RGB (resized from native)",
+  "experiments": {
+    "biggan_vs_real_auroc": 0.940325,
+    "adm_vs_real_auroc": 0.66345,
+    "all_generators_auroc": 0.8018875,
+    "all_generators_accuracy": 0.665,
+    "all_generators_ece": 0.17961098495840744,
+    "cross_gen_train_biggan_test_adm": {
+      "auroc": 0.66345,
+      "accuracy": 0.4975,
+      "ece": 0.1144988298596179,
+      "temperature": 0.91499968000471
+    },
+    "cross_gen_train_adm_test_biggan": {
+      "auroc": 0.940325,
+      "accuracy": 0.51,
+      "ece": 0.2968223775115294,
+      "temperature": 1.196917906955773
+    },
+    "calibrated_on_all": {
+      "auroc": 0.8018875,
+      "accuracy": 0.665,
+      "ece": 0.10464647583494019,
+      "temperature": 0.40717307243597484
+    }
+  },
+  "uncertainty_stats": {
+    "mean": 0.5551374080590933,
+    "median": 0.554202724033519,
+    "mean_ai": 0.5339094640956878,
+    "mean_real": 0.5975932959859042
+  }
+}

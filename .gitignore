@@ -10,3 +10,13 @@ dist/
 build/
 *.npz
 calibration.json
+
+# Large parquet downloads (not needed in git, re-download via scripts/download_eval_data.py)
+data/biggan/
+data/adm/
+data/coco/
+data/eval/
+*.parquet
+
+# Code review graph
+.code-review-graph/

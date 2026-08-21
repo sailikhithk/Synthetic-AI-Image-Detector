@@ -208,6 +208,37 @@ SAI/
 - This is not a forensic provenance tool. It tells you whether an image is
   AI-generated, not which generator produced it or whether it was edited.
 
+## Real-world evaluation results
+
+Evaluated on 600 images from the GenImage benchmark (200 real MS-COCO +
+200 BigGAN + 200 ADM), CPU-only, no GPU.
+
+| Experiment | AUROC | Accuracy | ECE |
+|------------|-------|----------|-----|
+| BigGAN vs Real | **0.9403** | 0.6650 | 0.1796 |
+| ADM vs Real | **0.6634** | - | - |
+| All generators (uncalibrated) | **0.8019** | 0.6650 | 0.1796 |
+| All generators (calibrated) | **0.8019** | 0.6650 | **0.1046** |
+
+Cross-generator generalization (train calibration on one generator, test on another):
+
+| Train on | Test on | AUROC | ECE |
+|----------|---------|-------|-----|
+| BigGAN | ADM | 0.6634 | 0.1145 |
+| ADM | BigGAN | 0.9403 | 0.2968 |
+
+Key findings:
+- GAN artifacts (BigGAN) are detectable at AUROC 0.94; diffusion artifacts
+  (ADM) are harder at AUROC 0.66. No single signal generalizes to all
+  generators.
+- Calibration does not transfer across generator families (ECE degrades
+  from 0.18 to 0.30 when fitted on ADM and applied to BigGAN).
+- The refusal mechanism achieves 96.15% accuracy when it commits (at 87%
+  refusal), but the default threshold (0.40) is too aggressive and needs
+  tuning for practical deployment.
+
+Full results and analysis: [docs/results.md](docs/results.md).
+
 ## National-security framing
 
 Synthetic image detection is a textbook national-security capability:
