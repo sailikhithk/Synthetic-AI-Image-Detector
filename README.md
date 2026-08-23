@@ -41,6 +41,71 @@ production-reliability primitives that real deployments need.
 
 ## What makes SAI different
 
+### Detection pipeline
+
+Three model-agnostic signals feed into a calibration layer that produces a
+calibrated probability, an uncertainty estimate, and a verdict that can refuse
+to commit when evidence is weak:
+
+```mermaid
+flowchart TD
+    IMG["Input Image"] --> FREQ["FrequencySignal\nDCT spectrum analysis\nHigh-freq energy ratio\nCross-channel correlation"]
+    IMG --> RECON["ReconstructionSignal\nWavelet denoiser residual\nResidual energy\nSpectral concentration"]
+    IMG --> NOISE["NoiseResidualSignal\nPRNU fingerprint\nChannel variance asymmetry\nSpatial consistency"]
+
+    FREQ --> ENS["Ensemble\nWeighted combination"]
+    RECON --> ENS
+    NOISE --> ENS
+
+    ENS --> CAL["Temperature Calibration\nsigmoid(logit(raw) / T)"]
+    CAL --> EP["Epistemic uncertainty\nSignal disagreement"]
+    CAL --> AL["Aleatoric uncertainty\nWeight entropy"]
+
+    EP --> TOTAL["total_uncertainty"]
+    AL --> TOTAL
+
+    TOTAL --> GATE{"uncertainty >=\nrefuse_threshold?"}
+    GATE -->|Yes| INC["Verdict: inconclusive\n(refuse to commit)"]
+    GATE -->|No| SCORE{"calibrated_score\n>= 0.5?"}
+    SCORE -->|Yes| AI["Verdict: ai"]
+    SCORE -->|No| REAL["Verdict: real"]
+
+    style FREQ fill:#0f3460,stroke:#e94560,color:#fff
+    style RECON fill:#0f3460,stroke:#e94560,color:#fff
+    style NOISE fill:#0f3460,stroke:#e94560,color:#fff
+    style CAL fill:#16213e,stroke:#e94560,color:#fff
+    style GATE fill:#e94560,stroke:#fff,color:#fff
+    style INC fill:#1a1a2e,stroke:#e94560,color:#fff
+    style AI fill:#1a1a2e,stroke:#e94560,color:#fff
+    style REAL fill:#1a1a2e,stroke:#e94560,color:#fff
+```
+
+Cross-generator evaluation exposes the failure mode that breaks most
+open-source detectors - a new generator the detector has never seen:
+
+```mermaid
+flowchart LR
+    subgraph TRAIN["Calibration training set"]
+        GA["Generator A\n(e.g. BigGAN)"]
+        GB["Generator B\n(e.g. Real camera)"]
+    end
+
+    subgraph TEST["Held-out test"]
+        GC["Generator C\n(e.g. Midjourney v6)"]
+    end
+
+    PIPE["DetectorPipeline\n(frozen signals)"] --> CALFIT["Fit temperature T\non A + B"]
+    GA --> CALFIT
+    GB --> CALFIT
+    CALFIT --> EVAL["Evaluate on C"]
+    GC --> EVAL
+    EVAL --> REPORT["Report\nAUROC, ECE\nRefusal-aware accuracy\nPer-generator breakdown"]
+
+    style TRAIN fill:#0f3460,stroke:#e94560,color:#fff
+    style TEST fill:#1a1a2e,stroke:#e94560,color:#fff
+    style REPORT fill:#16213e,stroke:#e94560,color:#fff
+```
+
 | Primitive | What it does | Why it matters |
 |-----------|--------------|----------------|
 | Multi-signal ensemble | Frequency, reconstruction, noise residual | No single signal generalizes; ensemble hedges |
