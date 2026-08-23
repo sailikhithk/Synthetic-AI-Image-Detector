@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 420" width="100%" height="auto" role="img" aria-label="Synthetic AI Image Detector pipeline: multi-signal detection, calibration, uncertainty quantification, cross-generator evaluation">
+  <style>
+    .label { font-family: -apple-system, Segoe UI, Helvetica, sans-serif; font-size: 13px; fill: #1a1a1a; }
+    .title { font-family: -apple-system, Segoe UI, Helvetica, sans-serif; font-size: 16px; font-weight: 600; fill: #0f172a; }
+    .small { font-family: -apple-system, Segoe UI, Helvetica, sans-serif; font-size: 11px; fill: #475569; }
+    @media (prefers-color-scheme: dark) {
+      .label { fill: #e2e8f0; }
+      .title { fill: #f1f5f9; }
+      .small { fill: #94a3b8; }
+    }
+  </style>
+
+  <text x="400" y="28" text-anchor="middle" class="title">Synthetic AI Image Detector (SAI)</text>
+  <text x="400" y="48" text-anchor="middle" class="small">Multi-signal detection - Calibration - Uncertainty - Cross-generator eval</text>
+
+  <!-- Input image -->
+  <rect x="20" y="170" width="90" height="80" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+  <text x="65" y="200" text-anchor="middle" class="label">Input</text>
+  <text x="65" y="218" text-anchor="middle" class="label">Image</text>
+  <text x="65" y="238" text-anchor="middle" class="small">RGB</text>
+
+  <!-- Animated scanning line over input -->
+  <line x1="25" y1="180" x2="105" y2="180" stroke="#3b82f6" stroke-width="2" opacity="0.8">
+    <animate attributeName="y1" from="180" to="240" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="y2" from="180" to="240" dur="1.5s" repeatCount="indefinite"/>
+  </line>
+
+  <!-- Multi-signal extractors (3 parallel branches) -->
+  <rect x="170" y="90" width="130" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="235" y="112" text-anchor="middle" class="label" font-weight="600">Frequency</text>
+  <text x="235" y="130" text-anchor="middle" class="small">DCT, FFT artifacts</text>
+
+  <rect x="170" y="183" width="130" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="235" y="205" text-anchor="middle" class="label" font-weight="600">Spatial</text>
+  <text x="235" y="223" text-anchor="middle" class="small">CNN features</text>
+
+  <rect x="170" y="275" width="130" height="55" rx="8" fill="#fce7f3" stroke="#ec4899" stroke-width="2"/>
+  <text x="235" y="297" text-anchor="middle" class="label" font-weight="600">Noise</text>
+  <text x="235" y="315" text-anchor="middle" class="small">PRNU, residual</text>
+
+  <!-- Animated signal pulses from input to extractors -->
+  <circle r="4" fill="#3b82f6">
+    <animate attributeName="cx" from="110" to="170" dur="1s" repeatCount="indefinite"/>
+    <animate attributeName="cy" from="210" to="117" dur="1s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;0" dur="1s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="4" fill="#3b82f6">
+    <animate attributeName="cx" from="110" to="170" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+    <animate attributeName="cy" from="210" to="210" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;0" dur="1s" begin="0.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle r="4" fill="#3b82f6">
+    <animate attributeName="cx" from="110" to="170" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+    <animate attributeName="cy" from="210" to="302" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0;1;0" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Fusion layer -->
+  <rect x="360" y="150" width="120" height="120" rx="10" fill="#e0e7ff" stroke="#6366f1" stroke-width="2.5"/>
+  <text x="420" y="180" text-anchor="middle" class="label" font-weight="600">Fusion</text>
+  <text x="420" y="200" text-anchor="middle" class="small">+ Calibration</text>
+  <text x="420" y="220" text-anchor="middle" class="small">(temperature</text>
+  <text x="420" y="238" text-anchor="middle" class="small">scaling)</text>
+  <text x="420" y="258" text-anchor="middle" class="small">+ uncertainty</text>
+
+  <!-- Pulsing fusion core -->
+  <circle cx="420" cy="210" r="8" fill="#6366f1" opacity="0.6">
+    <animate attributeName="r" values="6;14;6" dur="1.5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+
+  <!-- Arrows from extractors to fusion -->
+  <g fill="none" stroke-width="2" stroke-dasharray="4,4">
+    <path d="M 300 117 L 360 195" stroke="#22c55e" opacity="0.6"/>
+    <path d="M 300 210 L 360 210" stroke="#f59e0b" opacity="0.6"/>
+    <path d="M 300 302 L 360 225" stroke="#ec4899" opacity="0.6"/>
+  </g>
+
+  <!-- Output: 3 verdicts -->
+  <rect x="540" y="90" width="120" height="55" rx="8" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+  <text x="600" y="112" text-anchor="middle" class="label" font-weight="600">P(real)</text>
+  <text x="600" y="130" text-anchor="middle" class="small">calibrated prob</text>
+
+  <rect x="540" y="183" width="120" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="600" y="205" text-anchor="middle" class="label" font-weight="600">Uncertainty</text>
+  <text x="600" y="223" text-anchor="middle" class="small">epistemic + aleatoric</text>
+
+  <rect x="540" y="275" width="120" height="55" rx="8" fill="#fee2e2" stroke="#ef4444" stroke-width="2"/>
+  <text x="600" y="297" text-anchor="middle" class="label" font-weight="600">Verdict</text>
+  <text x="600" y="315" text-anchor="middle" class="small">real / fake / refuse</text>
+
+  <!-- Arrows from fusion to outputs -->
+  <g fill="none" stroke-width="2">
+    <path d="M 480 195 L 540 117" stroke="#22c55e" opacity="0.7">
+      <animate attributeName="stroke-dasharray" values="0,80;40,40;80,0" dur="1.5s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 480 210 L 540 210" stroke="#f59e0b" opacity="0.7">
+      <animate attributeName="stroke-dasharray" values="0,60;30,30;60,0" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
+    </path>
+    <path d="M 480 225 L 540 302" stroke="#ef4444" opacity="0.7">
+      <animate attributeName="stroke-dasharray" values="0,80;40,40;80,0" dur="1.5s" begin="0.6s" repeatCount="indefinite"/>
+    </path>
+  </g>
+
+  <!-- Cross-generator eval harness -->
+  <rect x="700" y="170" width="80" height="80" rx="6" fill="#f1f5f9" stroke="#64748b" stroke-width="2"/>
+  <text x="740" y="195" text-anchor="middle" class="label" font-weight="600">Eval</text>
+  <text x="740" y="213" text-anchor="middle" class="small">cross-gen</text>
+  <text x="740" y="230" text-anchor="middle" class="small">SDXL, MidJ,</text>
+  <text x="740" y="245" text-anchor="middle" class="small">DALL-E, Flux</text>
+
+  <line x1="660" y1="210" x2="700" y2="210" stroke="#64748b" stroke-width="1.5" stroke-dasharray="3,3" opacity="0.5"/>
+
+  <text x="400" y="395" text-anchor="middle" class="small">For journalists, fact-checkers, and analysts who cannot afford false accusations</text>
+</svg>

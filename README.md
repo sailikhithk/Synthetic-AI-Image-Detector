@@ -19,6 +19,10 @@ to be fooled by deepfakes but also cannot afford false accusations.
 > measures cross-generator generalization - the failure mode that breaks
 > detectors the day a new generator ships.
 
+<p align="center">
+  <img src="assets/architecture.svg" alt="SAI pipeline: multi-signal extraction (frequency, spatial, noise), fusion with calibration and uncertainty, cross-generator eval" width="100%">
+</p>
+
 ## Why this exists
 
 Synthetic image generation has crossed the photorealistic threshold.
