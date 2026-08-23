@@ -121,6 +121,12 @@ flowchart LR
 
 ## Signals
 
+SAI looks at four different artifact families. Each signal has strengths and blind spots; the ensemble is what makes the verdict reliable:
+
+<p align="center">
+  <img src="assets/detection-signals.svg" alt="SAI detection signals: frequency, spatial, noise, and semantic artifacts in AI-generated images" width="100%">
+</p>
+
 ### 1. Frequency-domain (`FrequencySignal`)
 
 Diffusion and GAN generators leave periodic artifacts in the DCT spectrum
