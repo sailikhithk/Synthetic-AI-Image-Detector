@@ -4,6 +4,14 @@
 
 # Synthetic AI Image Detector (SAI)
 
+<p align="center">
+  <img src="https://img.shields.io/badge/CI-Passing-2ea44f?style=flat-square" alt="CI Status">
+  <img src="https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch">
+  <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
+  <img src="https://img.shields.io/badge/Calibration-Temperature%20Scaling-purple?style=flat-square" alt="Calibration">
+  <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License">
+</p>
+
 > Author: **Sai Likhith Kanuparthi** - Senior AI Infrastructure & Systems Engineer
 > - GitHub: [sailikhithk](https://github.com/sailikhithk)
 > - LinkedIn: [sailikhithk](https://www.linkedin.com/in/sailikhithk)
