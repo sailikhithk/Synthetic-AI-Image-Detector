@@ -11,22 +11,27 @@ SAI is an open-source multi-signal detector that reports a calibrated probabilit
 - All generators (calibrated): AUROC 0.8019, ECE 0.1046
 - Cross-generator: calibration does NOT transfer across generator families
 - Refusal mechanism: 96.15% accuracy at 87% refusal rate
+- Real-world case study: 28/28 AI-generated Instagram images correctly detected after 6-signal upgrade
 
-## Signals
+## Signals (6-signal ensemble)
 
 1. **Frequency-domain** (DCT cross-channel correlation) - GAN generators leave periodic spectral artifacts
 2. **Reconstruction error** (wavelet denoiser residual) - synthetic images reconstruct cleanly, real photos leave sensor noise residual
-3. **Noise residual** (PRNU-style channel asymmetry) - real cameras leave Bayer-pattern fingerprints, AI generators do not
+3. **Noise residual** (PRNU-style channel asymmetry, JPEG-aware) - real cameras leave Bayer-pattern fingerprints, AI generators do not. Detects JPEG block artifacts and reduces weight up to 70% when platform re-encoding mimics PRNU
+4. **Semantic** (color palette, dominant color concentration, background uniformity, channel correlation) - AI images have limited palettes, uniform backgrounds, and joint channel synthesis. Content-awareness reduces weight on text/diagram images
+5. **Metadata** (EXIF/IPTC fingerprinting) - FBMD platform markers, camera EXIF absence, AI software tags, progressive JPEG, JFIF-only detection
+6. **Cross-image consistency** (batch-level color/edge/histogram variance) - AI-generated series have near-identical statistics across images. Available via detect_batch()
 
 ## Key files
 
 - [README.md](README.md) - full project overview, results table, usage
 - [docs/results.md](docs/results.md) - real-world evaluation writeup with limitations
 - [docs/architecture.md](docs/architecture.md) - design principles and signal pipeline
-- [sai/pipeline.py](sai/pipeline.py) - ensemble detector with calibration and uncertainty
+- [sai/pipeline.py](sai/pipeline.py) - ensemble detector with calibration, uncertainty, batch support
 - [sai/calibration.py](sai/calibration.py) - temperature scaling + epistemic/aleatoric uncertainty
 - [sai/eval.py](sai/eval.py) - evaluation harness with cross-generator generalization experiment
-- [sai/cli.py](sai/cli.py) - CLI: `sai detect`, `sai eval-dir`, `sai calibrate`
+- [sai/cli.py](sai/cli.py) - CLI: `sai detect`, `sai detect-batch`, `sai eval-dir`, `sai calibrate`
+- [sai/signals/](sai/signals/) - 6 signal implementations (frequency, reconstruction, noise, semantic, metadata, cross_image)
 - [scripts/run_real_eval.py](scripts/run_real_eval.py) - reproducible GenImage evaluation
 - [scripts/download_eval_data.py](scripts/download_eval_data.py) - HuggingFace dataset download
 
@@ -35,24 +40,30 @@ SAI is an open-source multi-signal detector that reports a calibrated probabilit
 ```bash
 pip install -e .
 sai detect path/to/image.png
+sai detect-batch path/to/image_directory/
 sai eval-dir real_dir/ ai_dir/ --generator biggan
 ```
 
 ## Other AI/ML work by Sai Likhith Kanuparthi
 
+Brand focus: Production evals + medical + finance AI.
+
+- [eval-infra-for-agents](https://github.com/sailikhithk/eval-infra-for-agents) - Field guide to building production-grade evaluation infrastructure for LLM agent systems. Based on Airbnb BPI Virtual Analyst eval harness (23+ agent versions, 1,690 ground-truth samples).
 - [facadedriver](https://github.com/sailikhithk/facadedriver) - Model-agnostic orchestration for multi-LLM production systems: routing, retry, fallback, circuit breakers, per-request telemetry.
-- [mamba-from-scratch](https://github.com/sailikhithk/mamba-from-scratch) - From-scratch S4, Mamba-1 (S6), Mamba-2 (SSD) state-space models in pure PyTorch.
 - [llm-production-engineering](https://github.com/sailikhithk/llm-production-engineering) - Field notes on LLM serving in production: cost tracking, eval-driven deployment, capacity planning, incident playbooks.
+- [lims-omi](https://github.com/sailikhithk/lims-omi) - 21 CFR Part 11 compliance collaboration platform for cross-hub laboratory task management. Electronic signatures, SLA tracking, audit trails.
 - [alzheimers-drug-discovery-demo](https://github.com/sailikhithk/alzheimers-drug-discovery-demo) - QSAR machine learning for Alzheimer's drug discovery: predict bioactivity against Beta-amyloid A4 protein.
-- [Project-X](https://github.com/sailikhithk/Project-X) - AI-based video interview platform with automated analysis.
-- [Tags-recommender-system-for-community-forums](https://github.com/sailikhithk/Tags-recommender-system-for-community-forums) - NLP multi-label tag recommender with TF-IDF, neural networks, and active learning.
 - [CreditCardFraudDetectionUsingKafka](https://github.com/sailikhithk/CreditCardFraudDetectionUsingKafka) - Real-time fraud detection with Kafka, Spark EMR, and AWS Lambda.
+- [mamba-from-scratch](https://github.com/sailikhithk/mamba-from-scratch) - From-scratch S4, Mamba-1 (S6), Mamba-2 (SSD) state-space models in pure PyTorch.
+- [Project-X](https://github.com/sailikhithk/Project-X) - AI-based video interview platform with automated analysis.
 
 ## Author
 
 Sai Likhith Kanuparthi - Senior AI Infrastructure & Systems Engineer.
 7+ years shipping production AI systems at Airbnb, Southwest Airlines, Shell,
 Eli Lilly, and Oracle. MS Computer Science from NYU.
+
+Brand: Production evals + medical + finance AI.
 
 - GitHub: https://github.com/sailikhithk
 - LinkedIn: https://www.linkedin.com/in/sailikhithk
