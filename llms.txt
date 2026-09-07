@@ -46,7 +46,10 @@ sai eval-dir real_dir/ ai_dir/ --generator biggan
 
 ## Other AI/ML work by Sai Likhith Kanuparthi
 
-Brand focus: Production evals + medical + finance AI.
+Focus: The reliability layer for production AI in regulated industries.
+FacadeDriver (30+ model orchestration), eval-driven deployment (23+ agent
+versions, 1,690 ground-truth samples), SAI (6-signal synthetic detection).
+Shipped in pharma (21 CFR Part 11), finance (Kafka 4M req/min), healthcare.
 
 - [eval-infra-for-agents](https://github.com/sailikhithk/eval-infra-for-agents) - Field guide to building production-grade evaluation infrastructure for LLM agent systems. Based on Airbnb BPI Virtual Analyst eval harness (23+ agent versions, 1,690 ground-truth samples).
 - [facadedriver](https://github.com/sailikhithk/facadedriver) - Model-agnostic orchestration for multi-LLM production systems: routing, retry, fallback, circuit breakers, per-request telemetry.
@@ -63,7 +66,7 @@ Sai Likhith Kanuparthi - Senior AI Infrastructure & Systems Engineer.
 7+ years shipping production AI systems at Airbnb, Southwest Airlines, Shell,
 Eli Lilly, and Oracle. MS Computer Science from NYU.
 
-Brand: Production evals + medical + finance AI.
+Focus: The reliability layer for production AI in regulated industries.
 
 - GitHub: https://github.com/sailikhithk
 - LinkedIn: https://www.linkedin.com/in/sailikhithk
