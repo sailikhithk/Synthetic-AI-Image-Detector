@@ -120,19 +120,22 @@ flowchart LR
 
 | Primitive | What it does | Why it matters |
 |-----------|--------------|----------------|
-| Multi-signal ensemble | Frequency, reconstruction, noise residual | No single signal generalizes; ensemble hedges |
+| Multi-signal ensemble | Frequency, reconstruction, noise, semantic, metadata, cross-image | No single signal generalizes; ensemble hedges |
 | Temperature calibration | Maps raw scores to true probabilities | A 0.9 score should mean 90% chance of AI, not 60% |
 | Epistemic uncertainty | Signal disagreement | Catches inputs the detector has never seen |
-| Aleatoric uncertainty | Weight entropy | Catches inputs where no signal is confident |
+| Aleatoric uncertainty | Signal confidence (distance from 0.5) | Catches inputs where no signal is confident |
 | Refusal verdict | Returns "inconclusive" when uncertainty is high | Prevents forced wrong calls on hard inputs |
 | Cross-generator eval | Train calibration on generators A,B; test on C | Measures the new-generator failure mode |
+| JPEG compression awareness | Detects and compensates for JPEG block artifacts | Prevents false "real" on platform-re-encoded AI images |
+| Metadata fingerprinting | EXIF/IPTC camera data, FBMD, software tags | Deterministic AI detection from file headers |
+| Cross-image consistency | Batch-level color/edge/histogram variance | Detects AI-generated series (carousels, batch gens) |
 
 ## Signals
 
-SAI looks at four different artifact families. Each signal has strengths and blind spots; the ensemble is what makes the verdict reliable:
+SAI looks at six different artifact families. Each signal has strengths and blind spots; the ensemble is what makes the verdict reliable:
 
 <p align="center">
-  <img src="assets/detection-signals.svg" alt="SAI detection signals: frequency, spatial, noise, and semantic artifacts in AI-generated images" width="100%">
+  <img src="assets/detection-signals.svg" alt="SAI detection signals: frequency, spatial, noise, semantic, metadata, and cross-image artifacts in AI-generated images" width="100%">
 </p>
 
 ### 1. Frequency-domain (`FrequencySignal`)
@@ -169,6 +172,71 @@ fingerprint. This signal measures:
   (Bayer pattern); AI generators typically do not.
 - **Spatial consistency of noise**: real PRNU has stable spatial structure;
   AI noise is more uniform.
+- **JPEG blockiness detection**: detects 8x8 DCT block artifacts from
+  platform re-encoding (Instagram, Twitter). When strong JPEG compression
+  is detected, the signal weight is reduced up to 70% because JPEG artifacts
+  mimic PRNU spatial structure, causing false "real" verdicts on AI images
+  that were uploaded to social media.
+
+### 4. Semantic (`SemanticSignal`)
+
+Pixel-level statistical signals miss semantic-level artifacts that are
+obvious to humans. This signal measures content-level AI signatures:
+
+- **Color palette size**: AI images often have a limited, synthetic color
+  palette (few unique colors relative to image size).
+- **Dominant color concentration**: AI images with solid/gradient backgrounds
+  have a high fraction of pixels matching one dominant color.
+- **Background uniformity**: samples corner regions and measures variance.
+  AI images with synthetic backgrounds have very low corner variance.
+- **Channel correlation**: AI generators synthesize RGB channels jointly,
+  producing higher channel-to-channel correlation than real camera images.
+- **Edge density**: AI diagrams have uniform edge density outside the natural
+  range of photographic content.
+- **Content-awareness**: when high edge density is detected (text/diagram
+  content), the signal reduces its weight and pulls toward neutral, because
+  text-heavy images create natural-looking diversity that masks AI signatures.
+
+### 5. Metadata (`MetadataSignal`)
+
+AI-generated images and platform-re-encoded images carry metadata fingerprints
+that pixel-level signals cannot detect. This signal examines file headers:
+
+- **FBMD fingerprint**: Facebook/Meta Binary Metadata in IPTC
+  SpecialInstructions. Present when an image has been uploaded to
+  Instagram/Facebook. Combined with no camera EXIF, this is a strong AI signal.
+- **EXIF camera absence**: real photographs carry EXIF metadata (camera make,
+  model, GPS, exposure settings). AI-generated images have NO camera EXIF.
+  Complete absence is a strong AI-generation signal.
+- **AI software tags**: some AI tools (Midjourney, Stable Diffusion WebUI,
+  DALL-E) embed software tags in EXIF/IPTC/XMP. This is a deterministic
+  AI fingerprint (score 1.0, weight 1.0).
+- **Progressive JPEG**: Instagram and many AI pipelines produce progressive
+  JPEGs. Real camera JPEGs are typically baseline.
+- **JFIF-only metadata**: images with only JFIF metadata (no EXIF, no camera
+  data) are typically generated/synthetic.
+
+This signal requires the image file path (not just the pixel array) because
+metadata is stored in file headers, not pixels.
+
+### 6. Cross-image consistency (`CrossImageConsistencySignal`)
+
+AI-generated image series (Instagram carousels, batch generations from the
+same prompt) have extremely uniform color and texture statistics across
+images. Real photo sets have high variance due to different lighting,
+angles, subjects, and camera conditions. This signal operates on a BATCH
+of images:
+
+- **Color statistics variance**: mean RGB across the batch. AI batches have
+  stddev < 5; real photo sets have stddev > 15.
+- **Edge density variance**: edge density should vary across real photos.
+  AI-generated series have near-constant edge density.
+- **Histogram correlation**: pairwise histogram correlation across images.
+  AI batches have high correlation (>0.8); real photos have low (<0.5).
+
+This signal is only available when detecting multiple images together via
+`detect_batch()`. For single-image detection, it returns a neutral score
+with low weight.
 
 ## Calibration and uncertainty
 
@@ -191,8 +259,9 @@ Two forms of uncertainty are reported:
 - **Epistemic** (model uncertainty): weighted variance of signal scores.
   High when signals disagree - typically on inputs from a generator the
   detector has never seen.
-- **Aleatoric** (data uncertainty): entropy of the signal weight
-  distribution. High when no single signal is confident.
+- **Aleatoric** (data uncertainty): average distance of signal scores from
+  0.5 (how confident each signal is). High when signals are near 0.5
+  (uncertain), low when signals are near 0 or 1 (confident).
 
 When `total_uncertainty >= refuse_threshold`, the verdict is
 `inconclusive` rather than `ai` or `real`. This is the refusal mechanism
@@ -227,11 +296,14 @@ dependencies: `pip install -e ".[dev]"`.
 ## CLI
 
 ```bash
-# Detect a single image
+# Detect a single image (uses metadata signal when file path is provided)
 sai detect path/to/image.png
 
 # Detect with JSON output (for pipelines)
 sai detect path/to/image.png --json
+
+# Detect a batch of images (uses cross-image consistency signal)
+sai detect-batch path/to/image_directory/
 
 # Evaluate on a directory of real vs AI images
 sai eval-dir real/ ai/ --generator sd-xl
@@ -247,11 +319,19 @@ from sai.pipeline import DetectorPipeline
 from sai.io import load_image
 
 pipeline = DetectorPipeline()
-result = pipeline.detect(load_image("image.png"))
+
+# Single image detection (with metadata signal)
+result = pipeline.detect(load_image("image.png"), file_path="image.png")
 
 print(result.verdict)              # "ai", "real", or "inconclusive"
 print(result.calibrated_score)     # well-calibrated probability
 print(result.total_uncertainty)    # 0..1, high = refuse
+
+# Batch detection (with cross-image consistency signal)
+images = [load_image(f"img{i}.png") for i in range(10)]
+results = pipeline.detect_batch(images, file_paths=[f"img{i}.png" for i in range(10)])
+for r in results:
+    print(r.verdict, r.calibrated_score)
 ```
 
 Cross-generator evaluation:
@@ -275,11 +355,12 @@ print(report.auroc, report.ece, report.refusal_rate)
 ```
 SAI/
   sai/
-    signals/           # Detection signals (frequency, reconstruction, noise)
+    signals/           # Detection signals (frequency, reconstruction, noise,
+                       #   semantic, metadata, cross-image)
     calibration.py     # Temperature scaling + uncertainty quantification
-    pipeline.py        # Ensemble pipeline
+    pipeline.py        # Ensemble pipeline (single + batch detection)
     eval.py            # Evaluation harness + cross-generator generalization
-    cli.py             # sai detect / sai eval / sai calibrate
+    cli.py             # sai detect / sai detect-batch / sai eval / sai calibrate
     io.py              # Image loading
   tests/               # Synthetic fixtures + signal sanity + calibration checks
   docs/                # Architecture and method notes

@@ -13,7 +13,9 @@ def test_pipeline_detect_returns_valid_result():
     assert 0.0 <= res.calibrated_score <= 1.0
     assert res.verdict in {"ai", "real", "inconclusive"}
     assert 0.0 <= res.total_uncertainty <= 1.0
-    assert len(res.signal_results) == 3
+    # Default pipeline now has 4 signals (freq, recon, noise, semantic)
+    # Metadata signal only added when file_path is provided
+    assert len(res.signal_results) == 4
 
 
 def test_pipeline_separates_real_vs_ai():
@@ -57,3 +59,43 @@ def test_uncertainty_refuses_on_disagreement():
     res = uncertainty(scores, weights, calibrated_score=0.65, refuse_threshold=0.3)
     assert res.epistemic_uncertainty > 0.3
     assert res.verdict == "inconclusive"
+
+
+def test_pipeline_detect_with_filepath_adds_metadata(tmp_path):
+    """When file_path is provided, metadata signal should be included."""
+    from PIL import Image
+    p = DetectorPipeline()
+    img = make_real_like(seed=15)
+    path = tmp_path / "test.jpg"
+    Image.fromarray(img).save(path, "JPEG")
+    res = p.detect(img, file_path=str(path))
+    # Should have 5 signals: 4 default + metadata
+    assert len(res.signal_results) == 5
+    signal_names = [r.features.get("name", "?") for r in res.signal_results]
+    assert "metadata" in signal_names
+
+
+def test_pipeline_detect_batch_returns_results():
+    """Batch detection should return one result per image with cross-image signal."""
+    from tests.conftest import make_ai_batch, make_real_batch
+    p = DetectorPipeline()
+    ai_batch = make_ai_batch(n=5, seed=50)
+    results = p.detect_batch(ai_batch)
+    assert len(results) == 5
+    for r in results:
+        assert 0.0 <= r.raw_score <= 1.0
+        assert r.verdict in {"ai", "real", "inconclusive"}
+        # Cross-image signal should be present
+        signal_names = [sr.features.get("name", "?") for sr in r.signal_results]
+        assert "cross_image" in signal_names
+
+
+def test_pipeline_batch_separates_real_vs_ai():
+    """Batch detection: AI batch should score higher than real batch."""
+    from tests.conftest import make_ai_batch, make_real_batch
+    p = DetectorPipeline()
+    ai_results = p.detect_batch(make_ai_batch(n=5, seed=60))
+    real_results = p.detect_batch(make_real_batch(n=5, seed=60))
+    mean_ai = float(np.mean([r.raw_score for r in ai_results]))
+    mean_real = float(np.mean([r.raw_score for r in real_results]))
+    assert mean_ai > mean_real, f"AI batch {mean_ai} should > real batch {mean_real}"

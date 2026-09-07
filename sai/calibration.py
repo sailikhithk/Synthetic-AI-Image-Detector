@@ -82,8 +82,9 @@ def uncertainty(
     """Compute epistemic + aleatoric uncertainty from a set of signal results.
 
     epistemic: disagreement between signals (weighted variance of scores).
-    aleatoric: entropy of the weight distribution (low confidence in any
-               single signal -> high aleatoric uncertainty).
+    aleatoric: average distance of signal scores from 0.5 (how confident
+               each signal is). High when signals are near 0.5 (uncertain),
+               low when signals are near 0 or 1 (confident).
     """
     scores = np.asarray(scores, dtype=np.float64)
     weights = np.asarray(weights, dtype=np.float64)
@@ -93,11 +94,11 @@ def uncertainty(
     weighted_mean = float(np.dot(w, scores))
     weighted_var = float(np.dot(w, (scores - weighted_mean) ** 2))
     epistemic = float(np.clip(weighted_var * 4.0, 0.0, 1.0))  # scale to [0,1]
-    # entropy of weights, normalized
-    p = w + 1e-12
-    entropy = float(-np.sum(p * np.log(p)))
-    max_entropy = float(np.log(len(w))) if len(w) > 1 else 1.0
-    aleatoric = float(entropy / max_entropy) if max_entropy > 0 else 0.0
+    # Aleatoric: how close are signal scores to 0.5 (uncertain)?
+    # |score - 0.5| * 2 gives confidence in [0, 1]. 1 - confidence = uncertainty.
+    confidences = np.abs(scores - 0.5) * 2.0  # 0 at 0.5, 1 at 0 or 1
+    weighted_confidence = float(np.dot(w, confidences))
+    aleatoric = float(np.clip(1.0 - weighted_confidence, 0.0, 1.0))
     total = float(np.clip(0.6 * epistemic + 0.4 * aleatoric, 0.0, 1.0))
 
     if total >= refuse_threshold:
