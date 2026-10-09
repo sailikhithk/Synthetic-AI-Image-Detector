@@ -5,12 +5,24 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "sai-detector"
 version = "0.1.0"
-description = "Synthetic AI Image detector with calibration, uncertainty, and cross-generator eval harness"
+description = "Synthetic AI & Synthetic Intelligence (SI) image detector with C2PA provenance, calibration, uncertainty, and cross-generator eval harness"
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Sai Likhith Kanuparthi", email = "sailikhith108@gmail.com" }]
-keywords = ["deepfake", "ai-generated", "image-forensics", "calibration", "uncertainty", "national-security"]
+keywords = [
+    "deepfake",
+    "ai-generated",
+    "synthetic-intelligence",
+    "synthetic-imagery",
+    "si-detector",
+    "c2pa",
+    "synthid-alternative",
+    "image-forensics",
+    "calibration",
+    "uncertainty",
+    "national-security",
+]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Scientific/Engineering :: Image Recognition",

@@ -148,3 +148,61 @@ def test_cross_image_batch_size_in_features():
     results = s.analyze_batch(batch)
     for r in results:
         assert r.features["batch_size"] == 3
+
+
+def test_metadata_signal_detects_c2pa_synthetic(tmp_path):
+    """File with C2PA synthetic assertion should be deterministically flagged."""
+    from PIL import Image
+
+    img = make_ai_like(seed=40)
+    path = tmp_path / "c2pa_synth.jpg"
+    Image.fromarray(img).save(path, "JPEG")
+    # Append mock C2PA synthetic block to file binary
+    with open(path, "ab") as f:
+        f.write(b"\x00\x00\x00\x20c2pa_manifest:urn:c2pa:action:trainedAlgorithmicMedia:c2pa.synthetic")
+
+    s = MetadataSignal()
+    r = s.analyze_file(str(path))
+    assert r.score == 1.0
+    assert r.weight == 1.0
+    assert r.features["deterministic"] is True
+    assert r.features["has_c2pa"] is True
+    assert r.features["is_c2pa_synthetic"] is True
+
+
+def test_metadata_signal_detects_c2pa_authentic_capture(tmp_path):
+    """File with C2PA authentic capture assertion should score very low."""
+    from PIL import Image
+
+    img = make_real_like(seed=41)
+    path = tmp_path / "c2pa_real.jpg"
+    Image.fromarray(img).save(path, "JPEG")
+    # Append mock C2PA hardware capture block to file binary
+    with open(path, "ab") as f:
+        f.write(b"\x00\x00\x00\x20c2pa_manifest:urn:c2pa:action:c2pa.capture:hardware_secure_enclave")
+
+    s = MetadataSignal()
+    r = s.analyze_file(str(path))
+    assert r.score == 0.05
+    assert r.weight == 1.0
+    assert r.features["deterministic"] is True
+    assert r.features["has_c2pa"] is True
+    assert r.features["is_c2pa_capture"] is True
+
+
+def test_metadata_signal_detects_si_software_tag(tmp_path):
+    """EXIF software tag containing SI / Synthetic Intelligence should trigger deterministic AI."""
+    from PIL import Image, PngImagePlugin
+
+    img = make_ai_like(seed=42)
+    path = tmp_path / "si_image.png"
+    meta = PngImagePlugin.PngInfo()
+    meta.add_text("Software", "Flux.1 by Black Forest Labs (Synthetic Intelligence)")
+    Image.fromarray(img).save(path, "PNG", pnginfo=meta)
+
+    s = MetadataSignal()
+    r = s.analyze_file(str(path))
+    assert r.score == 1.0
+    assert r.weight == 1.0
+    assert r.features["deterministic"] is True
+    assert r.features["ai_software"] is not None

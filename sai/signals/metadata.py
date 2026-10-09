@@ -89,19 +89,71 @@ class MetadataSignal(Signal):
             pass
         return False
 
+    def _check_c2pa(self, file_path: str | Path) -> dict:
+        """Inspect file binary headers for C2PA / Coalition for Content Provenance metadata.
+
+        C2PA is the international standard adopted by Google, OpenAI, Adobe, Microsoft,
+        Sony, Leica, and Nikon to cryptographically sign content origin.
+        """
+        try:
+            p = Path(file_path)
+            if not p.is_file():
+                return {"has_c2pa": False, "is_synthetic": False, "is_capture": False}
+            with open(p, "rb") as f:
+                # Read initial segment containing metadata manifests/headers
+                header = f.read(131072)
+            has_c2pa_marker = (
+                b"c2pa" in header
+                or b"C2PA" in header
+                or b"urn:c2pa" in header
+                or b"jumbf" in header
+            )
+            if not has_c2pa_marker:
+                return {"has_c2pa": False, "is_synthetic": False, "is_capture": False}
+
+            synthetic_terms = [
+                b"trainedAlgorithmicMedia",
+                b"compositeSynthetic",
+                b"c2pa.synthetic",
+                b"c2pa.created",
+                b"c2pa.ai",
+                b"c2pa.data_mining",
+                b"algorithmicMedia",
+                b"syntheticMedia",
+            ]
+            is_synthetic = any(term in header for term in synthetic_terms)
+            is_capture = (
+                b"c2pa.capture" in header or b"c2pa.placed" in header
+            ) and not is_synthetic
+
+            return {
+                "has_c2pa": True,
+                "is_synthetic": is_synthetic,
+                "is_capture": is_capture,
+            }
+        except Exception:
+            return {"has_c2pa": False, "is_synthetic": False, "is_capture": False}
+
     def _check_software_tag(self, img: Image.Image) -> Optional[str]:
-        """Check for AI tool signatures in EXIF/IPTC software tags."""
-        ai_signatures = [
+        """Check for AI/SI tool signatures in EXIF/IPTC software tags."""
+        ai_si_signatures = [
+            # Traditional AI generator signatures
             "midjourney", "stable diffusion", "dall-e", "dalle",
             "flux", "novelai", "niji", "comfyui", "automatic1111",
             "dreamstudio", "leonardo", "firefly", "imagen",
             "gpt-4", "chatgpt", "bing image", "craiyon",
+            # Modern SI (Synthetic Intelligence / Synthetic Media) & Frontier models
+            "synthetic intelligence", "synthetic media", "synthetic image",
+            "synthid", "c2pa.synthetic", "trainedalgorithmicmedia",
+            "black forest labs", "sd3", "stable diffusion 3",
+            "ideogram", "recraft", "kling", "luma", "runway", "gen-3",
+            "grok-2", "aurora", "seedream", "cogview", "minimax", "hailuo",
         ]
         try:
             exif = img.getexif()
             # Check Software tag (305)
             software = str(exif.get(305, "")).lower()
-            for sig in ai_signatures:
+            for sig in ai_si_signatures:
                 if sig in software:
                     return sig
             # Check IPTC Object Name (2:5) and Caption (2:120)
@@ -109,7 +161,7 @@ class MetadataSignal(Signal):
             for key, val in img.info.items():
                 if isinstance(val, (str, bytes)):
                     val_lower = str(val).lower()
-                    for sig in ai_signatures:
+                    for sig in ai_si_signatures:
                         if sig in val_lower:
                             return sig
         except Exception:
@@ -138,28 +190,58 @@ class MetadataSignal(Signal):
         )
 
     def analyze_file(self, file_path: str | Path) -> SignalResult:
-        """Analyze image file metadata. This is the primary entry point."""
+        """Analyze image file metadata including EXIF, IPTC, and C2PA provenance."""
         img = Image.open(file_path)
 
+        c2pa_info = self._check_c2pa(file_path)
         has_fbmd = self._check_fbmd(img)
         has_camera = self._check_exif_camera(img)
         ai_software = self._check_software_tag(img)
         is_progressive = self._check_progressive(img)
         jfif_only = self._check_jfif_only(img)
 
-        # Scoring logic:
-        # - AI software tag = deterministic AI (score 1.0, weight 1.0)
-        # - No camera EXIF + JFIF only = strong AI signal (score 0.85)
-        # - No camera EXIF + progressive JPEG = moderate AI (score 0.75)
-        # - FBMD present = platform re-encoded, original metadata stripped
-        #   This alone is not proof of AI, but combined with no camera EXIF = strong
-        # - Camera EXIF present = strong real signal (score 0.1)
+        # 1. C2PA Signed Provenance (Cryptographic ground truth)
+        if c2pa_info["has_c2pa"] and c2pa_info["is_synthetic"]:
+            return SignalResult(
+                score=1.0,
+                weight=1.0,
+                features={
+                    "c2pa": c2pa_info,
+                    "has_c2pa": True,
+                    "is_c2pa_synthetic": True,
+                    "ai_software": "c2pa_synthetic_manifest",
+                    "has_fbmd": has_fbmd,
+                    "has_camera_exif": has_camera,
+                    "is_progressive": is_progressive,
+                    "jfif_only": jfif_only,
+                    "deterministic": True,
+                },
+            )
 
+        if c2pa_info["has_c2pa"] and c2pa_info["is_capture"]:
+            return SignalResult(
+                score=0.05,
+                weight=1.0,
+                features={
+                    "c2pa": c2pa_info,
+                    "has_c2pa": True,
+                    "is_c2pa_capture": True,
+                    "ai_software": None,
+                    "has_fbmd": has_fbmd,
+                    "has_camera_exif": True,
+                    "is_progressive": is_progressive,
+                    "jfif_only": jfif_only,
+                    "deterministic": True,
+                },
+            )
+
+        # 2. Explicit AI / SI Software tag embedded in EXIF/IPTC
         if ai_software:
             return SignalResult(
                 score=1.0,
                 weight=1.0,
                 features={
+                    "c2pa": c2pa_info,
                     "ai_software": ai_software,
                     "has_fbmd": has_fbmd,
                     "has_camera_exif": has_camera,
@@ -175,6 +257,7 @@ class MetadataSignal(Signal):
                 score=0.1,
                 weight=0.9,
                 features={
+                    "c2pa": c2pa_info,
                     "has_fbmd": has_fbmd,
                     "has_camera_exif": True,
                     "is_progressive": is_progressive,
@@ -207,6 +290,7 @@ class MetadataSignal(Signal):
             score=float(np.clip(score, 0.0, 1.0)),
             weight=float(np.clip(weight, 0.0, 1.0)),
             features={
+                "c2pa": c2pa_info,
                 "has_fbmd": has_fbmd,
                 "has_camera_exif": False,
                 "ai_software": None,

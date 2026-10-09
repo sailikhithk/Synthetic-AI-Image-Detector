@@ -1,8 +1,8 @@
-# Synthetic AI Image Detector (SAI)
+# Synthetic AI & Synthetic Intelligence (SI) Image Detector (SAI)
 
-> Production-reliability layer for detecting AI-generated images. Built for journalists, fact-checkers, and national-security analysts who cannot afford false accusations but also cannot afford to be fooled by deepfakes.
+> Production-reliability layer for detecting AI and Synthetic Intelligence (SI) generated images. Built for journalists, fact-checkers, and national-security analysts who cannot afford false accusations but also cannot afford to be fooled by deepfakes.
 
-SAI is an open-source multi-signal detector that reports a calibrated probability, an uncertainty estimate, and a verdict that can refuse to commit when evidence is weak. Most open-source detectors publish a single score and call it a day. SAI adds the production-reliability primitives that real deployments need: temperature calibration, epistemic + aleatoric uncertainty, refusal verdicts, and a cross-generator evaluation harness that measures the new-generator failure mode.
+SAI is an open-source multi-signal detector that reports a calibrated probability, an uncertainty estimate, and a verdict that can refuse to commit when evidence is weak. Accounts for both traditional AI generators and modern Synthetic Intelligence (SI) / Synthetic Media standards (including C2PA provenance manifests). Most open-source detectors publish a single score and call it a day. SAI adds the production-reliability primitives that real deployments need: temperature calibration, epistemic + aleatoric uncertainty, refusal verdicts, deterministic C2PA/tag overrides, and a cross-generator evaluation harness that measures the new-generator failure mode.
 
 ## Evaluated on GenImage benchmark
 
@@ -19,7 +19,7 @@ SAI is an open-source multi-signal detector that reports a calibrated probabilit
 2. **Reconstruction error** (wavelet denoiser residual) - synthetic images reconstruct cleanly, real photos leave sensor noise residual
 3. **Noise residual** (PRNU-style channel asymmetry, JPEG-aware) - real cameras leave Bayer-pattern fingerprints, AI generators do not. Detects JPEG block artifacts and reduces weight up to 70% when platform re-encoding mimics PRNU
 4. **Semantic** (color palette, dominant color concentration, background uniformity, channel correlation) - AI images have limited palettes, uniform backgrounds, and joint channel synthesis. Content-awareness reduces weight on text/diagram images
-5. **Metadata** (EXIF/IPTC fingerprinting) - FBMD platform markers, camera EXIF absence, AI software tags, progressive JPEG, JFIF-only detection
+5. **Metadata & Provenance** (C2PA manifests & EXIF/IPTC fingerprinting) - C2PA signed synthetic assertions (`trainedAlgorithmicMedia`, `c2pa.synthetic`), camera EXIF presence/absence, AI/SI software tags (Midjourney, DALL-E, Flux.1, SD3), progressive JPEG, JFIF-only detection
 6. **Cross-image consistency** (batch-level color/edge/histogram variance) - AI-generated series have near-identical statistics across images. Available via detect_batch()
 
 ## Key files

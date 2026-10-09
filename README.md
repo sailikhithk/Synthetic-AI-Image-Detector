@@ -2,13 +2,14 @@
   <img src="assets/banner.svg" alt="Synthetic AI Image Detector (SAI) - Multi-signal detection with calibration, uncertainty, and cross-generator eval" width="100%">
 </p>
 
-# Synthetic AI Image Detector (SAI)
+# Synthetic AI & Synthetic Intelligence (SI) Image Detector (SAI)
 
 <p align="center">
   <img src="https://img.shields.io/badge/CI-Passing-2ea44f?style=flat-square" alt="CI Status">
   <img src="https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?style=flat-square&logo=pytorch&logoColor=white" alt="PyTorch">
   <img src="https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python Versions">
   <img src="https://img.shields.io/badge/Calibration-Temperature%20Scaling-purple?style=flat-square" alt="Calibration">
+  <img src="https://img.shields.io/badge/C2PA-Provenance%20Aware-007acc?style=flat-square" alt="C2PA">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="License">
 </p>
 
@@ -17,7 +18,7 @@
 > - LinkedIn: [sailikhithk](https://www.linkedin.com/in/sailikhithk)
 > - Portfolio: [sailikhith.me](https://sailikhith.me)
 
-A production-reliability layer for detecting AI-generated images, aimed at
+A production-reliability layer for detecting AI and Synthetic Intelligence (SI) generated images, aimed at
 journalists, fact-checkers, and national-security analysts who cannot afford
 to be fooled by deepfakes but also cannot afford false accusations.
 
@@ -197,20 +198,24 @@ obvious to humans. This signal measures content-level AI signatures:
   content), the signal reduces its weight and pulls toward neutral, because
   text-heavy images create natural-looking diversity that masks AI signatures.
 
-### 5. Metadata (`MetadataSignal`)
+### 5. Metadata & Provenance (`MetadataSignal`)
 
-AI-generated images and platform-re-encoded images carry metadata fingerprints
-that pixel-level signals cannot detect. This signal examines file headers:
+AI/SI-generated images and platform-re-encoded images carry metadata fingerprints
+and provenance records that pixel-level signals cannot detect. This signal examines file headers:
 
+- **C2PA cryptographic provenance**: inspects binary headers for C2PA / JUMBF manifests.
+  Detects digital source type assertions such as `trainedAlgorithmicMedia`,
+  `compositeSynthetic`, and `c2pa.synthetic` (deterministic synthetic signal: score 1.0, weight 1.0).
+  Conversely, detects hardware camera certificates (`c2pa.capture`) for cryptographically
+  signed physical captures (score 0.05, weight 1.0).
+- **AI / SI software tags**: detects generator signatures across both traditional AI and
+  frontier Synthetic Intelligence (SI) tooling (Midjourney v6, Stable Diffusion 3, Flux.1,
+  DALL-E 3, Imagen 3, Grok-2, Kling, Luma, Ideogram, Recraft).
 - **FBMD fingerprint**: Facebook/Meta Binary Metadata in IPTC
   SpecialInstructions. Present when an image has been uploaded to
-  Instagram/Facebook. Combined with no camera EXIF, this is a strong AI signal.
+  Instagram/Facebook. Combined with no camera EXIF, this is a strong indicator of platform stripping.
 - **EXIF camera absence**: real photographs carry EXIF metadata (camera make,
-  model, GPS, exposure settings). AI-generated images have NO camera EXIF.
-  Complete absence is a strong AI-generation signal.
-- **AI software tags**: some AI tools (Midjourney, Stable Diffusion WebUI,
-  DALL-E) embed software tags in EXIF/IPTC/XMP. This is a deterministic
-  AI fingerprint (score 1.0, weight 1.0).
+  model, GPS, exposure settings). AI-generated images typically have NO camera EXIF.
 - **Progressive JPEG**: Instagram and many AI pipelines produce progressive
   JPEGs. Real camera JPEGs are typically baseline.
 - **JFIF-only metadata**: images with only JFIF metadata (no EXIF, no camera
@@ -296,14 +301,20 @@ dependencies: `pip install -e ".[dev]"`.
 ## CLI
 
 ```bash
-# Detect a single image (uses metadata signal when file path is provided)
+# Detect a single image (uses C2PA provenance and metadata when file path is provided)
 sai detect path/to/image.png
+
+# Detect with Synthetic Intelligence (SI) terminology
+sai detect path/to/image.png --terminology si
+
+# Detect with forensic/synthetic terminology
+sai detect path/to/image.png --terminology synthetic
 
 # Detect with JSON output (for pipelines)
 sai detect path/to/image.png --json
 
 # Detect a batch of images (uses cross-image consistency signal)
-sai detect-batch path/to/image_directory/
+sai detect-batch path/to/image_directory/ --terminology si
 
 # Evaluate on a directory of real vs AI images
 sai eval-dir real/ ai/ --generator sd-xl

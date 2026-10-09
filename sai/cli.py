@@ -18,22 +18,37 @@ app = typer.Typer(help="SAI: Synthetic AI Image detector")
 console = Console()
 
 
+def format_verdict(verdict: str, terminology: str = "ai") -> str:
+    """Format verdict string according to requested terminology (ai, si, synthetic)."""
+    t = terminology.lower()
+    if t == "si":
+        mapping = {"ai": "SYNTHETIC (SI)", "real": "AUTHENTIC", "inconclusive": "INCONCLUSIVE"}
+    elif t in {"synthetic", "forensic"}:
+        mapping = {"ai": "SYNTHETIC", "real": "AUTHENTIC", "inconclusive": "INCONCLUSIVE"}
+    else:
+        mapping = {"ai": "AI", "real": "REAL", "inconclusive": "INCONCLUSIVE"}
+    return mapping.get(verdict.lower(), verdict.upper())
+
+
 @app.command()
 def detect(
     image_path: Path = typer.Argument(..., exists=True, help="Path to image file"),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON instead of rich text"),
+    terminology: str = typer.Option("ai", "--terminology", "-t", help="Nomenclature: 'ai', 'si' (Synthetic Intelligence), or 'synthetic'"),
 ) -> None:
-    """Detect whether an image is AI-generated."""
+    """Detect whether an image is AI/SI-generated."""
     img = load_image(image_path)
     pipeline = DetectorPipeline()
     res = pipeline.detect(img, file_path=str(image_path))
     if json_out:
-        console.print_json(json.dumps(res.to_dict()))
+        out = res.to_dict()
+        out["verdict_display"] = format_verdict(res.verdict, terminology)
+        console.print_json(json.dumps(out))
         return
     table = Table(title=f"SAI detection: {image_path.name}")
     table.add_column("Field", style="cyan")
     table.add_column("Value", style="magenta")
-    table.add_row("Verdict", res.verdict.upper())
+    table.add_row("Verdict", format_verdict(res.verdict, terminology))
     table.add_row("Raw score", f"{res.raw_score:.4f}")
     table.add_row("Calibrated score", f"{res.calibrated_score:.4f}")
     table.add_row("Epistemic uncertainty", f"{res.epistemic_uncertainty:.4f}")
@@ -55,8 +70,9 @@ def detect(
 def detect_batch(
     image_dir: Path = typer.Argument(..., exists=True, help="Directory of images to analyze as a batch"),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON instead of rich text"),
+    terminology: str = typer.Option("ai", "--terminology", "-t", help="Nomenclature: 'ai', 'si', or 'synthetic'"),
 ) -> None:
-    """Detect AI-generated images in a batch using cross-image consistency."""
+    """Detect AI/SI-generated images in a batch using cross-image consistency."""
     images_paths = sorted(
         list(image_dir.glob("*.jpg")) + list(image_dir.glob("*.jpeg")) + list(image_dir.glob("*.png"))
     )
@@ -73,6 +89,7 @@ def detect_batch(
         for p, r in zip(images_paths, results):
             d = r.to_dict()
             d["file"] = str(p)
+            d["verdict_display"] = format_verdict(r.verdict, terminology)
             output.append(d)
         console.print_json(json.dumps(output))
         return
@@ -83,7 +100,7 @@ def detect_batch(
     table.add_column("Score", style="yellow")
     table.add_column("Uncertainty", style="red")
     for p, r in zip(images_paths, results):
-        table.add_row(p.name, r.verdict.upper(), f"{r.calibrated_score:.4f}", f"{r.total_uncertainty:.4f}")
+        table.add_row(p.name, format_verdict(r.verdict, terminology), f"{r.calibrated_score:.4f}", f"{r.total_uncertainty:.4f}")
     console.print(table)
 
     # Show cross-image consistency summary

@@ -99,3 +99,39 @@ def test_pipeline_batch_separates_real_vs_ai():
     mean_ai = float(np.mean([r.raw_score for r in ai_results]))
     mean_real = float(np.mean([r.raw_score for r in real_results]))
     assert mean_ai > mean_real, f"AI batch {mean_ai} should > real batch {mean_real}"
+
+
+def test_pipeline_deterministic_c2pa_override(tmp_path):
+    """C2PA synthetic file should trigger deterministic 1.0 override in pipeline."""
+    from PIL import Image
+
+    img = make_real_like(seed=70)  # visually real image
+    path = tmp_path / "c2pa_synthetic.jpg"
+    Image.fromarray(img).save(path, "JPEG")
+    with open(path, "ab") as f:
+        f.write(b"\x00\x00\x00\x20c2pa:trainedAlgorithmicMedia")
+
+    p = DetectorPipeline()
+    res = p.detect(img, file_path=str(path))
+    assert res.raw_score == 1.0
+    assert res.calibrated_score == 1.0
+    assert res.verdict == "ai"
+    assert res.verdict_si == "synthetic"
+    assert res.total_uncertainty == 0.0
+
+
+def test_verdict_si_property():
+    """verdict_si should map ai->synthetic and real->authentic."""
+    from sai.pipeline import DetectionResult
+
+    r_ai = DetectionResult(raw_score=0.9, calibrated_score=0.9, verdict="ai",
+                           epistemic_uncertainty=0.1, aleatoric_uncertainty=0.1, total_uncertainty=0.1)
+    assert r_ai.verdict_si == "synthetic"
+
+    r_real = DetectionResult(raw_score=0.1, calibrated_score=0.1, verdict="real",
+                             epistemic_uncertainty=0.1, aleatoric_uncertainty=0.1, total_uncertainty=0.1)
+    assert r_real.verdict_si == "authentic"
+
+    r_inc = DetectionResult(raw_score=0.5, calibrated_score=0.5, verdict="inconclusive",
+                            epistemic_uncertainty=0.8, aleatoric_uncertainty=0.8, total_uncertainty=0.8)
+    assert r_inc.verdict_si == "inconclusive"

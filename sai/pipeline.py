@@ -34,11 +34,21 @@ class DetectionResult:
     signal_results: List[SignalResult] = field(default_factory=list)
     features: dict = field(default_factory=dict)
 
+    @property
+    def verdict_si(self) -> str:
+        """Standardized SI (Synthetic Intelligence / Synthetic Media) verdict."""
+        if self.verdict == "ai":
+            return "synthetic"
+        elif self.verdict == "real":
+            return "authentic"
+        return "inconclusive"
+
     def to_dict(self) -> dict:
         return {
             "raw_score": self.raw_score,
             "calibrated_score": self.calibrated_score,
             "verdict": self.verdict,
+            "verdict_si": self.verdict_si,
             "epistemic_uncertainty": self.epistemic_uncertainty,
             "aleatoric_uncertainty": self.aleatoric_uncertainty,
             "total_uncertainty": self.total_uncertainty,
@@ -73,12 +83,12 @@ class DetectorPipeline:
         self._cross_image_signal: Optional[CrossImageConsistencySignal] = None
 
     def detect(self, image: np.ndarray, file_path: Optional[str | Path] = None) -> DetectionResult:
-        """Detect if a single image is AI-generated.
+        """Detect if a single image is AI/SI-generated.
 
         Args:
             image: HxWxC uint8 RGB array.
             file_path: Optional path to the image file. If provided,
-                       MetadataSignal will analyze EXIF/IPTC headers.
+                       MetadataSignal will analyze EXIF/IPTC and C2PA headers.
         """
         results = [s.analyze(image) for s in self.signals]
 
@@ -94,12 +104,40 @@ class DetectorPipeline:
         for s, r in zip(self.signals, results[:len(self.signals)]):
             r.features["name"] = s.name
 
-        scores = np.array([r.score for r in results])
-        weights = np.array([r.weight for r in results])
-        w = weights / (weights.sum() + 1e-9)
-        raw = float(np.dot(w, scores))
-        calibrated = self.scaler.transform(raw)
-        cal: CalibratedResult = uncertainty(scores, weights, calibrated, self.refuse_threshold)
+        # Check for deterministic override (e.g. verified C2PA manifest or AI/SI software tag)
+        is_deterministic_ai = any(
+            r.features.get("deterministic") and r.score >= 0.99 for r in results
+        )
+        is_deterministic_real = any(
+            r.features.get("deterministic") and r.score <= 0.05 for r in results
+        )
+
+        if is_deterministic_ai:
+            raw = 1.0
+            calibrated = 1.0
+            verdict = "ai"
+            epistemic = 0.0
+            aleatoric = 0.0
+            total_unc = 0.0
+        elif is_deterministic_real:
+            raw = 0.0
+            calibrated = 0.0
+            verdict = "real"
+            epistemic = 0.0
+            aleatoric = 0.0
+            total_unc = 0.0
+        else:
+            scores = np.array([r.score for r in results])
+            weights = np.array([r.weight for r in results])
+            w = weights / (weights.sum() + 1e-9)
+            raw = float(np.dot(w, scores))
+            calibrated = self.scaler.transform(raw)
+            cal: CalibratedResult = uncertainty(scores, weights, calibrated, self.refuse_threshold)
+            verdict = cal.verdict
+            epistemic = cal.epistemic_uncertainty
+            aleatoric = cal.aleatoric_uncertainty
+            total_unc = cal.total_uncertainty
+
         features = {}
         for i, r in enumerate(results):
             if i < len(self.signals):
@@ -107,13 +145,14 @@ class DetectorPipeline:
             elif "name" not in r.features:
                 r.features["name"] = "metadata"
             features[r.features["name"]] = r.features
+
         return DetectionResult(
             raw_score=raw,
-            calibrated_score=cal.calibrated_score,
-            verdict=cal.verdict,
-            epistemic_uncertainty=cal.epistemic_uncertainty,
-            aleatoric_uncertainty=cal.aleatoric_uncertainty,
-            total_uncertainty=cal.total_uncertainty,
+            calibrated_score=calibrated,
+            verdict=verdict,
+            epistemic_uncertainty=epistemic,
+            aleatoric_uncertainty=aleatoric,
+            total_uncertainty=total_unc,
             signal_results=results,
             features=features,
         )
@@ -165,22 +204,50 @@ class DetectorPipeline:
         # Build DetectionResult for each image
         all_results = []
         for results in per_image_results:
-            scores = np.array([r.score for r in results])
-            weights = np.array([r.weight for r in results])
-            w = weights / (weights.sum() + 1e-9)
-            raw = float(np.dot(w, scores))
-            calibrated = self.scaler.transform(raw)
-            cal: CalibratedResult = uncertainty(scores, weights, calibrated, self.refuse_threshold)
+            is_deterministic_ai = any(
+                r.features.get("deterministic") and r.score >= 0.99 for r in results
+            )
+            is_deterministic_real = any(
+                r.features.get("deterministic") and r.score <= 0.05 for r in results
+            )
+
+            if is_deterministic_ai:
+                raw = 1.0
+                calibrated = 1.0
+                verdict = "ai"
+                epistemic = 0.0
+                aleatoric = 0.0
+                total_unc = 0.0
+            elif is_deterministic_real:
+                raw = 0.0
+                calibrated = 0.0
+                verdict = "real"
+                epistemic = 0.0
+                aleatoric = 0.0
+                total_unc = 0.0
+            else:
+                scores = np.array([r.score for r in results])
+                weights = np.array([r.weight for r in results])
+                w = weights / (weights.sum() + 1e-9)
+                raw = float(np.dot(w, scores))
+                calibrated = self.scaler.transform(raw)
+                cal: CalibratedResult = uncertainty(scores, weights, calibrated, self.refuse_threshold)
+                verdict = cal.verdict
+                epistemic = cal.epistemic_uncertainty
+                aleatoric = cal.aleatoric_uncertainty
+                total_unc = cal.total_uncertainty
+
             features = {}
             for r in results:
                 features[r.features.get("name", "?")] = r.features
+
             all_results.append(DetectionResult(
                 raw_score=raw,
-                calibrated_score=cal.calibrated_score,
-                verdict=cal.verdict,
-                epistemic_uncertainty=cal.epistemic_uncertainty,
-                aleatoric_uncertainty=cal.aleatoric_uncertainty,
-                total_uncertainty=cal.total_uncertainty,
+                calibrated_score=calibrated,
+                verdict=verdict,
+                epistemic_uncertainty=epistemic,
+                aleatoric_uncertainty=aleatoric,
+                total_uncertainty=total_unc,
                 signal_results=results,
                 features=features,
             ))
